@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: smart-todo-agent
+
+  datasource:
+    url: jdbc:h2:mem:tododb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+  ai:
+    # ─── CLAUDE (Anthropic) ─────────────────────────────────────────────────
+    # Claude kullanmak için ANTHROPIC_API_KEY set et ve bu bloğu aç.
+    # anthropic:
+    #   api-key: ${ANTHROPIC_API_KEY:}
+    #   chat:
+    #     options:
+    #       model: claude-sonnet-4-6
+
+    # ─── OLLAMA (Lokal / Gemma4) ─────────────────────────────────────────────
+    ollama:
+      base-url: http://localhost:11434
+      chat:
+        options:
+          model: gemma4:e4b
+          stream: true
+
+    # ─── MCP SERVER ──────────────────────────────────────────────────────────
+    mcp:
+      server:
+        name: smart-todo-server
+        version: 1.0.0
+        # Araçlar MCP endpoint'i: http://localhost:8080/mcp
+        # Claude Code .claude/settings.json'a ekle:
+        #   { "mcpServers": { "todo": { "url": "http://localhost:8080/mcp" } } }
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.springframework.ai: DEBUG
