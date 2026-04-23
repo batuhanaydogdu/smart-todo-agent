@@ -19,6 +19,9 @@ public class AgentController {
         return new ChatResponse(response);
     }
 
-    record ChatRequest(String message) {}
-    record ChatResponse(String response) {}
+    record ChatRequest(String message) {
+    }
+
+    record ChatResponse(String response) {
+    }
 }

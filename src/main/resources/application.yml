@@ -34,6 +34,9 @@ spring:
         options:
           model: gemma4:e4b
           stream: true
+      embedding:
+        options:
+          model: nomic-embed-text
 
     # ─── MCP SERVER ──────────────────────────────────────────────────────────
     mcp:

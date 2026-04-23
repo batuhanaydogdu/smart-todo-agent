@@ -2,6 +2,7 @@ package com.example.agent.tools;
 
 import com.example.agent.entity.Todo;
 import com.example.agent.repository.TodoRepository;
+import com.example.agent.service.DocumentService;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -22,6 +23,9 @@ public class TodoTools {
 
     @Autowired
     private TodoRepository todoRepository;
+
+    @Autowired
+    private DocumentService documentService;
 
     @Tool(description = "Yeni bir TODO görevi oluştur. title: görev başlığı, " +
                         "priority: LOW/MEDIUM/HIGH (varsayılan MEDIUM), " +
@@ -110,5 +114,13 @@ public class TodoTools {
     @Tool(description = "Şu anki tarih ve saati döndür. Tarih bazlı sorgular için kullan.")
     public String getCurrentDateTime() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+    }
+
+    @Tool(description = "Yüklenen dokümanlarda semantik arama yap. " +
+                        "Kullanıcı bir konu hakkında bilgi sorarsa, " +
+                        "daha önce /documents/upload ile yüklenen dosyalarda bu tool ile ara. " +
+                        "TODO yönetimiyle ilgisi olmayan bilgi sorularında bu tool'u kullan.")
+    public String searchDocuments(String query) {
+        return documentService.search(query);
     }
 }
