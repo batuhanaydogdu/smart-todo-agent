@@ -1,0 +1,148 @@
+============================
+PROJE: E-Ticaret Backend v2.0
+Ekip: Platform Ekibi
+Tarih: Nisan 2026
+============================
+
+## PROJE GENEL BAKIŞ
+
+E-Ticaret platformunun backend servisleri yeniden yazılıyor. Monolitik yapıdan
+microservice mimarisine geçiş hedefleniyor. Proje 3 sprint'e bölündü, her sprint
+2 hafta sürüyor.
+
+Teknik Stack:
+- Java 21 + Spring Boot 3.4
+- PostgreSQL 16 (ana veritabanı)
+- Redis (cache + session)
+- Kafka (event streaming)
+- Docker + Kubernetes (deployment)
+
+---
+
+## SPRINT 1 — Temel Altyapı (1-14 Nisan 2026)
+
+Sprint Hedefi: Auth servisi ve kullanıcı yönetimi tamamlanacak.
+
+Görevler:
+1. [TAMAMLANDI] JWT tabanlı kimlik doğrulama sistemi kuruldu
+2. [TAMAMLANDI] Kullanıcı kayıt ve giriş endpoint'leri yazıldı
+3. [TAMAMLANDI] Role-based access control (RBAC) eklendi — ADMIN, SELLER, BUYER rolleri
+4. [TAMAMLANDI] PostgreSQL bağlantısı ve migration altyapısı (Flyway) kuruldu
+5. [TAMAMLANDI] Docker Compose ile lokal geliştirme ortamı hazırlandı
+6. [DEVAM EDİYOR] Refresh token mekanizması — Batuhan üzerinde çalışıyor
+7. [BEKLEMEDE] Rate limiting (Redis ile) — Sprint 2'ye taşındı
+
+Sprint 1 Retrospektif Notları:
+- JWT secret key yönetimi için Vault entegrasyonu Sprint 2'ye alındı
+- Test coverage %68 — hedef %80, iyileştirme gerekiyor
+- API dokümantasyonu (Swagger) eksik, teknik borç olarak kaydedildi
+
+---
+
+## SPRINT 2 — Ürün ve Sipariş Servisleri (15-28 Nisan 2026)
+
+Sprint Hedefi: Ürün kataloğu ve sipariş yönetimi çalışır hale getirilecek.
+
+Görevler:
+1. [DEVAM EDİYOR] Ürün CRUD endpoint'leri — Ahmet sorumlu
+   - GET /products (filtreleme + sayfalama)
+   - POST /products (sadece SELLER rolü)
+   - PUT /products/{id}
+   - DELETE /products/{id} (soft delete)
+
+2. [DEVAM EDİYOR] Kategori yönetimi — Zeynep sorumlu
+   - Hiyerarşik kategori yapısı (Electronics > Phones > Smartphones)
+   - Kategori bazlı ürün listeleme
+
+3. [BEKLEMEDE] Sipariş oluşturma akışı
+   - Sepet → Sipariş dönüşümü
+   - Stok kontrolü (race condition dikkat!)
+   - Ödeme servisi entegrasyonu (mock)
+
+4. [BEKLEMEDE] Arama servisi
+   - Elasticsearch entegrasyonu
+   - Full-text search + filtreler (fiyat aralığı, kategori, marka)
+
+5. [KRİTİK - BEKLEMEDE] Stok yönetimi race condition hatası
+   - Aynı ürünü aynı anda 2 kullanıcı satın almaya çalıştığında stok eksi gidebiliyor
+   - Pessimistic locking veya Redis distributed lock çözümü değerlendirilecek
+   - Öncelik: YÜKSEK — canlıya geçmeden mutlaka çözülmeli
+
+6. [BEKLEMEDE] Redis cache entegrasyonu
+   - Ürün detay sayfaları için cache (TTL: 5 dakika)
+   - Kategori listesi cache (TTL: 1 saat)
+
+Sprint 2 Risk Analizi:
+- Elasticsearch kurulumu beklenenden uzun sürebilir → basit LIKE sorgusu fallback hazır
+- Ödeme servisi mock'u test için yeterli ama gerçek entegrasyon Sprint 3'e kaldı
+
+---
+
+## SPRINT 3 — Entegrasyon ve Yayına Hazırlık (29 Nisan - 12 Mayıs 2026)
+
+Sprint Hedefi: Tüm servislerin entegrasyonu, performans testleri, canlıya geçiş.
+
+Planlanan Görevler:
+1. Kafka event pipeline kurulumu
+   - Sipariş oluşturuldu → bildirim servisi
+   - Stok azaldı → tedarik servisi uyarısı
+   - Ödeme tamamlandı → fatura servisi
+
+2. Gerçek ödeme entegrasyonu (Stripe)
+   - Webhook handling
+   - Ödeme başarısız senaryoları
+
+3. Kubernetes deployment
+   - Helm chart hazırlama
+   - HPA (Horizontal Pod Autoscaler) konfigürasyonu
+   - Liveness ve readiness probe
+
+4. Performans testleri (k6)
+   - Hedef: 500 eşzamanlı kullanıcı, p95 < 200ms
+   - Darboğaz analizi
+
+5. Güvenlik taraması
+   - OWASP dependency check
+   - SQL injection testleri
+   - API rate limiting doğrulama
+
+---
+
+## AÇIK HATALAR (BUG LİSTESİ)
+
+BUG-001 [KRİTİK]: Stok race condition — Sprint 2'de çözülecek
+BUG-002 [YÜKSEK]: Admin kullanıcı silinince o kullanıcının ürünleri orphan kalıyor
+BUG-003 [ORTA]: Ürün fiyatı 0 girilince validation geçiyor, girilmemeli
+BUG-004 [ORTA]: Token yenileme endpoint'i bazen 500 dönüyor (intermittent)
+BUG-005 [DÜŞÜK]: Swagger UI'da dark mode düzgün çalışmıyor
+BUG-006 [DÜŞÜK]: Log formatı production'da JSON olmalı ama plaintext geliyor
+
+---
+
+## EKİP
+
+- Batuhan Aydoğdu — Tech Lead, Auth servisi, genel mimari
+- Ahmet Kaya — Backend Developer, Ürün servisi
+- Zeynep Demir — Backend Developer, Kategori ve arama
+- Merve Şahin — QA Engineer, test otomasyonu
+- Can Yılmaz — DevOps, Kubernetes ve CI/CD
+
+---
+
+## TEKNİK BORÇLAR
+
+1. Swagger / OpenAPI dokümantasyonu eksik (tüm endpoint'ler)
+2. Unit test coverage %68 → %80 hedefleniyor
+3. Centralized exception handling henüz yapılmadı — her controller kendi hatasını yönetiyor
+4. Environment bazlı konfigürasyon (dev/staging/prod) düzgün ayrılmamış
+5. Database index optimizasyonu yapılmadı — büyük veri setinde yavaşlama bekleniyor
+
+---
+
+## ÖNEMLİ KARARLAR (Architecture Decision Records)
+
+ADR-001: Monolitten microservice'e geçiş kademeli yapılacak (strangler fig pattern)
+ADR-002: Servisler arası iletişimde REST (sync) + Kafka (async) hibrit kullanılacak
+ADR-003: Her servisin kendi veritabanı olacak (database per service pattern)
+ADR-004: API Gateway olarak Spring Cloud Gateway kullanılacak
+ADR-005: Secret yönetimi için HashiCorp Vault — Sprint 3'te entegre edilecek
