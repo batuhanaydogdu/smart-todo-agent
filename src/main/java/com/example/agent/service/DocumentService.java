@@ -1,5 +1,7 @@
 package com.example.agent.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.reader.TextReader;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
  */
 @Service
 public class DocumentService {
+
+    private static final Logger log = LoggerFactory.getLogger(DocumentService.class);
 
     private final SimpleVectorStore vectorStore;
 
@@ -90,12 +94,16 @@ public class DocumentService {
      * Bu metin LLM'e context olarak verilir.
      */
     public String search(String query) {
+        log.info(">>> searchDocuments tool çağrıldı | query: '{}'", query);
+
         List<Document> results = vectorStore.similaritySearch(
                 SearchRequest.builder()
                         .query(query)
                         .topK(3)
                         .build()
         );
+
+        log.info(">>> {} chunk bulundu", results.size());
 
         if (results.isEmpty()) {
             return "İlgili doküman bulunamadı. Önce /documents/upload ile bir dosya yükle.";

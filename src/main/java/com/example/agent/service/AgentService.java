@@ -2,6 +2,10 @@ package com.example.agent.service;
 
 import com.example.agent.tools.TodoTools;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.stereotype.Service;
 
@@ -9,38 +13,49 @@ import org.springframework.stereotype.Service;
  * AI Agent servisi.
  *
  * Nasıl çalışır:
- * 1. Kullanıcı mesajı gelir (örn: "Yüksek öncelikli bir bug fix görevi ekle")
- * 2. ChatClient mesajı Ollama/Gemma4'e gönderir
- * 3. LLM mesajı analiz eder ve hangi tool'u çağıracağına karar verir
- * 4. Spring AI otomatik olarak ilgili TodoTools method'unu çalıştırır
- * 5. Tool sonucu LLM'e geri döner, LLM kullanıcıya cevap üretir
- * 6. Karmaşık isteklerde bu döngü birden fazla kez tekrarlanabilir (multi-step)
+ * 1. Kullanıcı mesajı + sessionId gelir
+ * 2. MessageChatMemoryAdvisor o session'ın geçmiş mesajlarını prompt'a ekler
+ * 3. ChatClient mesajı + geçmiş → Ollama/Gemma4
+ * 4. LLM tool çağırır veya direkt cevap verir
+ * 5. Yeni mesaj çifti (user + assistant) geçmişe kaydedilir
  *
- * Model değiştirmek için: OllamaChatModel yerine AnthropicChatModel inject et
- * ve application.yml'de ilgili bloğu aç.
+ * sessionId: her oturumu birbirinden ayırır.
+ * Aynı sessionId → LLM önceki konuşmayı hatırlar.
+ * Farklı sessionId → sıfırdan başlar.
  */
 @Service
 public class AgentService {
 
     private final ChatClient chatClient;
+    private final ChatMemory chatMemory;
 
-    // OllamaChatModel açıkça inject ediyoruz — hem Ollama hem Anthropic starter
-    // aynı anda classpath'te olduğunda Spring hangisini kullanacağını bilemez.
     public AgentService(OllamaChatModel ollamaChatModel, TodoTools todoTools) {
+        // InMemoryChatMemoryRepository: restart'ta sıfırlanır, kurulum gerektirmez.
+        // MessageWindowChatMemory: son N mesajı tutar (varsayılan 20).
+        this.chatMemory = MessageWindowChatMemory.builder()
+                .chatMemoryRepository(new InMemoryChatMemoryRepository())
+                .build();
+
         this.chatClient = ChatClient.builder(ollamaChatModel)
             .defaultSystem("""
                 Sen akıllı bir görev yönetimi asistanısın.
                 Kullanıcının doğal dil isteklerini anlayıp uygun araçları kullanarak TODO görevlerini yönet.
                 Türkçe konuş. Kısa ve net cevaplar ver.
                 Bir görevi yaparken kaç tane tool çağırdığını açıkla — bu öğretici olacak.
+
+                ÖNEMLİ: Kullanıcı proje, sprint, görev listesi veya spesifik bilgi içeren bir şey hakkında soru sorarsa
+                MUTLAKA önce searchDocuments tool'unu kullan. Kendi bilginle cevap verme,
+                dokümanda ne yazıyorsa onu kullan.
                 """)
             .defaultTools(todoTools)
+            .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
             .build();
     }
 
-    public String chat(String userMessage) {
+    public String chat(String userMessage, String sessionId) {
         return chatClient.prompt()
             .user(userMessage)
+            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
             .call()
             .content();
     }
