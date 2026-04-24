@@ -5,3 +5,5 @@ target/
 !.mvn/wrapper/maven-wrapper.properties
 *.class
 *.log
+# H2 file-based database — kişisel veri, repoya gitmesin
+data/

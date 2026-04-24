@@ -3,7 +3,9 @@ spring:
     name: smart-todo-agent
 
   datasource:
-    url: jdbc:h2:mem:tododb
+    # file: → veriler ./data/ klasörüne yazılır, restart'ta kaybolmaz
+    # mem:  → in-memory, restart'ta sıfırlanır (önceki hali)
+    url: jdbc:h2:file:./data/tododb
     driver-class-name: org.h2.Driver
     username: sa
     password:
@@ -15,7 +17,9 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      # update: mevcut tabloları koru, yeni alanlar ekle — veriler kaybolmaz
+      # create-drop: her restart'ta sıfırla (önceki hali)
+      ddl-auto: update
     show-sql: true
 
   ai:
@@ -33,7 +37,7 @@ spring:
       chat:
         options:
           model: gemma4:e4b
-          stream: true
+          stream: false
       embedding:
         options:
           model: nomic-embed-text

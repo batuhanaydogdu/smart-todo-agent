@@ -4,9 +4,9 @@ import com.example.agent.tools.TodoTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.ollama.OllamaChatModel;
+import com.example.agent.memory.JpaChatMemoryRepository;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -30,11 +30,12 @@ public class AgentService {
     private final ChatClient chatClient;
     private final ChatMemory chatMemory;
 
-    public AgentService(OllamaChatModel ollamaChatModel, TodoTools todoTools) {
-        // InMemoryChatMemoryRepository: restart'ta sıfırlanır, kurulum gerektirmez.
+    public AgentService(OllamaChatModel ollamaChatModel, TodoTools todoTools,
+                        JpaChatMemoryRepository jpaChatMemoryRepository) {
+        // JpaChatMemoryRepository: mesajlar H2 dosyasına kaydedilir → restart'ta kaybolmaz.
         // MessageWindowChatMemory: son N mesajı tutar (varsayılan 20).
         this.chatMemory = MessageWindowChatMemory.builder()
-                .chatMemoryRepository(new InMemoryChatMemoryRepository())
+                .chatMemoryRepository(jpaChatMemoryRepository)
                 .build();
 
         this.chatClient = ChatClient.builder(ollamaChatModel)
