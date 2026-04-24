@@ -8,6 +8,7 @@ import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 
 /**
  * AI Agent servisi.
@@ -57,6 +58,19 @@ public class AgentService {
             .user(userMessage)
             .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
             .call()
+            .content();
+    }
+
+    /**
+     * Streaming versiyon: cevabı token token döner.
+     * Controller'da text/event-stream olarak sunulur.
+     * UI her token geldiğinde ekrana yazar → ChatGPT benzeri deneyim.
+     */
+    public Flux<String> chatStream(String userMessage, String sessionId) {
+        return chatClient.prompt()
+            .user(userMessage)
+            .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, sessionId))
+            .stream()
             .content();
     }
 }

@@ -7,6 +7,9 @@ AI Agent + MCP Server konseptlerini öğrenmek için Spring Boot + Spring AI ile
 Bu proje şu kavramları uygulamalı olarak öğretmek için tasarlanmıştır:
 - **Spring AI Tool Calling**: `@Tool` annotation ile LLM'e Java method'larını araç olarak sunma
 - **AI Agent döngüsü**: LLM'in otomatik tool seçimi ve multi-step reasoning
+- **RAG**: Doküman yükleme, chunking, embedding ve semantik arama
+- **Agent Memory**: Session bazlı konuşma geçmişi (`MessageWindowChatMemory`)
+- **Streaming**: Token token cevap akışı (`Flux<String>` + SSE)
 - **MCP Server**: Araçları dışarıya açma (Claude Desktop/Code bağlanabilir)
 - **Model değişimi**: Claude ↔ Ollama/Gemma4 swap sadece `application.yml` ile
 
@@ -16,15 +19,25 @@ Bu proje şu kavramları uygulamalı olarak öğretmek için tasarlanmıştır:
 src/main/java/com/example/agent/
 ├── SmartTodoAgentApplication.java   — Spring Boot entry point
 ├── controller/
-│   └── AgentController.java         — POST /chat REST endpoint
+│   ├── AgentController.java         — POST /chat ve POST /chat/stream endpoint'leri
+│   └── DocumentController.java      — POST /documents/upload (RAG dosya yükleme)
 ├── service/
-│   └── AgentService.java            — ChatClient konfigürasyonu ve agent mantığı
+│   ├── AgentService.java            — ChatClient, streaming ve memory konfigürasyonu
+│   └── DocumentService.java         — RAG: chunking, embedding, vektör arama
 ├── tools/
-│   └── TodoTools.java               — 6 adet @Tool annotated method (agent araçları)
+│   └── TodoTools.java               — 7 adet @Tool annotated method (agent araçları)
 ├── entity/
 │   └── Todo.java                    — JPA entity: title, priority, status, dueDate
 └── repository/
     └── TodoRepository.java          — Spring Data JPA
+
+src/main/resources/
+├── application.yml                  — model konfigürasyonu
+└── static/
+    └── index.html                   — Chat UI (markdown render, streaming, RAG panel)
+
+test-documents/
+└── proje-dokumani.txt               — RAG testi için örnek döküman
 ```
 
 ## Çalıştırma
@@ -55,22 +68,31 @@ mvn spring-boot:run
 
 ## Kullanım
 
-### REST API — Chat Endpoint
+### Web UI
+```
+http://localhost:8080
+```
+Markdown render, streaming, doküman yükleme paneli dahil.
+
+### REST API — Chat Endpoint (senkron)
 ```bash
-# Görev ekle
 curl -X POST http://localhost:8080/chat \
   -H "Content-Type: application/json" \
-  -d '{"message": "Login bug fix taskını yüksek öncelikli ekle, son tarih 30 Nisan"}'
+  -d '{"message": "Login bug fix taskını yüksek öncelikli ekle", "sessionId": "oturum-1"}'
+```
 
-# Görevleri listele
-curl -X POST http://localhost:8080/chat \
+### REST API — Streaming Endpoint (token token)
+```bash
+curl -X POST http://localhost:8080/chat/stream \
   -H "Content-Type: application/json" \
-  -d '{"message": "Bugün ne yapmalıyım?"}'
+  -d '{"message": "Görevlerimi listele", "sessionId": "oturum-1"}'
+# Cevap: data:İşte data: görevlerin: ... (SSE formatında akar)
+```
 
-# Tamamla
-curl -X POST http://localhost:8080/chat \
-  -H "Content-Type: application/json" \
-  -d '{"message": "1 numaralı görevi tamamlandı olarak işaretle"}'
+### RAG — Doküman Yükleme
+```bash
+curl -X POST http://localhost:8080/documents/upload \
+  -F "file=@test-documents/proje-dokumani.txt"
 ```
 
 ### H2 Console (veritabanını görüntüle)
@@ -117,9 +139,11 @@ LLM: "Sprint review görevi yarın için oluşturuldu."
 
 Loglardan (`logging.level.org.springframework.ai: DEBUG`) her tool çağrısını takip edebilirsin.
 
-## Sonraki Adımlar
+## Tamamlanan Özellikler
 
-- [ ] Çoklu agent: Planner + Executor agent mimarisi
-- [ ] RAG: Doküman yükleme + vektör veritabanı
-- [ ] Konuşma geçmişi: Session-based memory
-- [ ] Web UI: Basit chat arayüzü
+- [x] Tool Calling (`@Tool` annotation)
+- [x] RAG (doküman yükleme + semantik arama)
+- [x] Agent Memory (session bazlı konuşma geçmişi)
+- [x] Streaming response (`Flux<String>` + SSE)
+- [x] Web UI (markdown render, doküman yükleme paneli)
+- [x] MCP Server

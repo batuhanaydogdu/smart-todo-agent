@@ -733,17 +733,43 @@
     const thinkingEl = addMessage(null, 'thinking');
 
     try {
-      const res = await fetch('/chat', {
+      const res = await fetch('/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: text, sessionId })
       });
 
-      const data = await res.json();
-      thinkingEl.remove();
-      addMessage(data.response, 'assistant');
+      if (!res.ok) throw new Error('Sunucu hatası: ' + res.status);
 
-      if (data.sessionId && data.sessionId !== sessionId) saveSession(data.sessionId);
+      // Thinking animasyonunu kaldır, boş asistan balonu aç
+      thinkingEl.remove();
+      const assistantEl = addMessage('', 'assistant');
+
+      // Stream'i oku — her chunk'ta ekrana yaz
+      // for await...of: stream bitince otomatik durur, while(true)+break gerekmez
+      const decoder = new TextDecoder();
+      let fullText = '';
+
+      for await (const chunk of res.body) {
+        // SSE formatı: "data:token\n\n" — data: kısmını ayıkla
+        const raw = decoder.decode(chunk, { stream: true });
+        const lines = raw.split('\n');
+
+        for (const line of lines) {
+          if (line.startsWith('data:')) {
+            const token = line.slice(5); // "data:" sonrasını al
+            fullText += token;
+            // Streaming sırasında düz metin göster (hız için)
+            assistantEl.textContent = fullText;
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+          }
+        }
+      }
+
+      // Stream bitti → markdown olarak render et
+      assistantEl.innerHTML = marked.parse(fullText);
+      messagesEl.scrollTop = messagesEl.scrollHeight;
+
     } catch (err) {
       thinkingEl.className = 'message assistant';
       thinkingEl.innerHTML = '<em style="color:#f87171">Hata: Sunucuya ulaşılamadı.</em>';
