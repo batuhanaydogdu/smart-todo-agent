@@ -1,5 +1,6 @@
 package com.example.agent.service;
 
+import com.example.agent.dto.ExtractTodosResponse;
 import com.example.agent.tools.TodoTools;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
@@ -9,6 +10,8 @@ import org.springframework.ai.ollama.OllamaChatModel;
 import com.example.agent.memory.JpaChatMemoryRepository;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+
+import java.time.LocalDate;
 
 /**
  * AI Agent servisi.
@@ -28,6 +31,7 @@ import reactor.core.publisher.Flux;
 public class AgentService {
 
     private final ChatClient chatClient;
+    private final ChatClient extractionClient; // tool/memory yok — sadece structured output için
     private final ChatMemory chatMemory;
 
     public AgentService(OllamaChatModel ollamaChatModel, TodoTools todoTools,
@@ -37,6 +41,17 @@ public class AgentService {
         this.chatMemory = MessageWindowChatMemory.builder()
                 .chatMemoryRepository(jpaChatMemoryRepository)
                 .build();
+
+        // Extraction için sade client — tool yok, memory yok, sadece JSON üretir
+        this.extractionClient = ChatClient.builder(ollamaChatModel)
+            .defaultSystem("""
+                Sen bir metin analiz asistanısın.
+                Verilen metinden yapılacak görevleri (TODO) çıkar.
+                Öncelikleri metindeki aciliyet ifadelerinden belirle.
+                Tarihleri Türkçe ifadelerden (yarın, bu hafta, önümüzdeki ay vb.) çıkar.
+                Sadece istenen JSON formatında cevap ver, başka açıklama ekleme.
+                """)
+            .build();
 
         this.chatClient = ChatClient.builder(ollamaChatModel)
             .defaultSystem("""
@@ -52,6 +67,24 @@ public class AgentService {
             .defaultTools(todoTools)
             .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
             .build();
+    }
+
+    /**
+     * Structured Output — metinden TODO listesi çıkar.
+     *
+     * .entity(ExtractTodosResponse.class) Spring AI'a şunu söyler:
+     *   1. ExtractTodosResponse field'larından JSON schema üret
+     *   2. LLM'e "sadece bu schema'ya uygun JSON döndür" talimatı ver
+     *   3. Gelen JSON'ı otomatik deserialize et → Java objesi hazır
+     *
+     * Bu sayede String parse etmek yerine direkt tip-güvenli obje alırız.
+     */
+    public ExtractTodosResponse extractTodos(String text) {
+        String today = LocalDate.now().toString();
+        return extractionClient.prompt()
+            .user("Bugünün tarihi: " + today + "\n\nAşağıdaki metinden görevleri çıkar:\n\n" + text)
+            .call()
+            .entity(ExtractTodosResponse.class);
     }
 
     public String chat(String userMessage, String sessionId) {

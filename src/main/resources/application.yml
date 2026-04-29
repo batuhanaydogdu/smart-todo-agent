@@ -36,7 +36,7 @@ spring:
       base-url: http://localhost:11434
       chat:
         options:
-          model: gemma4:e4b
+          model: gemma4:e2b
           stream: false
       embedding:
         options:

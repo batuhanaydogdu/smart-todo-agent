@@ -72,6 +72,86 @@
     #stream-toggle-btn:hover { border-color: #059669; color: #6ee7b7; background: #0a1f1a; }
     #stream-toggle-btn.active { border-color: #059669; color: #6ee7b7; background: #0a1f1a; }
 
+    /* ── Import Modal ── */
+    #import-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    #import-overlay.visible { display: flex; }
+    #import-modal {
+      background: #111; border: 1px solid #2a2a2a; border-radius: 14px;
+      width: 580px; max-width: 95vw; max-height: 90vh;
+      display: flex; flex-direction: column; overflow: hidden;
+    }
+    .import-header {
+      padding: 18px 20px 14px; border-bottom: 1px solid #1f1f1f;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .import-header h2 { font-size: 15px; font-weight: 600; color: #f3f4f6; }
+    .import-header p { font-size: 12px; color: #6b7280; margin-top: 3px; }
+    #import-close {
+      background: none; border: none; color: #4b5563;
+      font-size: 20px; cursor: pointer; padding: 2px 6px; border-radius: 6px;
+    }
+    #import-close:hover { color: #f3f4f6; background: #1f1f1f; }
+    .import-body { padding: 18px 20px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
+    #import-textarea {
+      width: 100%; background: #161616; border: 1px solid #2a2a2a;
+      border-radius: 10px; padding: 13px 16px; color: #e5e7eb;
+      font-size: 14px; font-family: inherit; resize: vertical;
+      min-height: 130px; line-height: 1.6; outline: none;
+    }
+    #import-textarea:focus { border-color: #1d4ed8; }
+    #import-textarea::placeholder { color: #3f3f3f; }
+    #import-analyze-btn {
+      background: #1d4ed8; color: white; border: none; border-radius: 10px;
+      padding: 12px 20px; font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s; align-self: flex-start;
+    }
+    #import-analyze-btn:hover { background: #1e40af; }
+    #import-analyze-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* Sonuçlar */
+    #import-results { display: none; flex-direction: column; gap: 10px; }
+    #import-results.visible { display: flex; }
+    .import-result-header {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .import-result-header span { font-size: 12px; font-weight: 600; color: #4b5563; text-transform: uppercase; letter-spacing: 0.06em; }
+    .import-warning {
+      background: #1c1005; border: 1px solid #78350f; border-radius: 8px;
+      padding: 10px 14px; font-size: 13px; color: #fbbf24;
+    }
+    .extracted-todo-item {
+      background: #161616; border: 1px solid #1f1f1f; border-radius: 10px;
+      padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start;
+    }
+    .extracted-todo-item input[type=checkbox] { margin-top: 3px; cursor: pointer; flex-shrink: 0; accent-color: #1d4ed8; width: 16px; height: 16px; }
+    .extracted-todo-info { flex: 1; min-width: 0; }
+    .extracted-todo-title { font-size: 14px; color: #f3f4f6; font-weight: 500; }
+    .extracted-todo-meta { font-size: 12px; color: #6b7280; margin-top: 4px; display: flex; gap: 10px; flex-wrap: wrap; }
+    .extracted-todo-reasoning { font-size: 12px; color: #374151; margin-top: 6px; font-style: italic; }
+    .priority-badge {
+      font-size: 11px; font-weight: 600; border-radius: 5px; padding: 2px 7px;
+    }
+    .priority-HIGH { background: #1c0a09; color: #f87171; border: 1px solid #7f1d1d; }
+    .priority-MEDIUM { background: #1c1005; color: #fbbf24; border: 1px solid #78350f; }
+    .priority-LOW { background: #052e16; color: #86efac; border: 1px solid #14532d; }
+    .import-footer {
+      padding: 14px 20px; border-top: 1px solid #1f1f1f;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    #import-select-all { font-size: 13px; color: #6b7280; cursor: pointer; background: none; border: none; font-family: inherit; }
+    #import-select-all:hover { color: #d1d5db; }
+    #import-save-btn {
+      background: #059669; color: white; border: none; border-radius: 10px;
+      padding: 10px 20px; font-size: 14px; font-weight: 500;
+      cursor: pointer; transition: background 0.15s;
+    }
+    #import-save-btn:hover { background: #047857; }
+    #import-save-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
     /* ── Layout ── */
     .main-layout { flex: 1; display: flex; overflow: hidden; }
 
@@ -372,6 +452,7 @@
     <span id="current-session-name"></span>
     <button id="stream-toggle-btn" onclick="toggleStream()">⚡ Streaming: Kapalı</button>
     <button id="doc-toggle-btn" onclick="toggleDocPanel()">📄 Dokümanlar</button>
+    <button id="import-open-btn" onclick="openImportModal()" style="background:none;border:1px solid #2a2a2a;color:#6b7280;border-radius:8px;padding:6px 12px;font-size:13px;font-family:inherit;cursor:pointer;white-space:nowrap;transition:border-color 0.15s,color 0.15s,background 0.15s;" onmouseover="this.style.borderColor='#7c3aed';this.style.color='#c4b5fd';this.style.background='#1a1228'" onmouseout="this.style.borderColor='#2a2a2a';this.style.color='#6b7280';this.style.background='none'">📥 İçe Aktar</button>
   </div>
 </header>
 
@@ -436,6 +517,41 @@
     </div>
   </div>
 
+</div>
+
+<!-- ── Import Modal ── -->
+<div id="import-overlay" onclick="closeImportOnOverlay(event)">
+  <div id="import-modal">
+    <div class="import-header">
+      <div>
+        <h2>📥 Metinden Görev Çıkar</h2>
+        <p>Toplantı notu, email veya mesaj yapıştır — AI görevleri otomatik çıkarır</p>
+      </div>
+      <button id="import-close" onclick="closeImportModal()">✕</button>
+    </div>
+
+    <div class="import-body">
+      <textarea id="import-textarea"
+        placeholder="Örnek: Bugün ekiple toplantı yaptık. Login bug'ı bu hafta bitmeli, kritik. API dökümantasyonu güncellenmesi lazım, acil değil. Bir de performans testleri var, önümüzdeki ay..."></textarea>
+
+      <button id="import-analyze-btn" onclick="analyzeText()">🔍 Analiz Et</button>
+
+      <!-- Sonuçlar -->
+      <div id="import-results">
+        <div class="import-result-header">
+          <span id="import-result-label">Bulunan Görevler</span>
+          <span id="import-source-badge"></span>
+        </div>
+        <div id="import-warning" class="import-warning" style="display:none"></div>
+        <div id="import-todo-list"></div>
+      </div>
+    </div>
+
+    <div class="import-footer" id="import-footer" style="display:none">
+      <button id="import-select-all" onclick="toggleSelectAll()">Tümünü Seç</button>
+      <button id="import-save-btn" onclick="saveExtracted()">✅ Seçilenleri Kaydet</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -814,6 +930,136 @@
     if (e.key === 'Enter') createSession();
     if (e.key === 'Escape') { newSessionForm.classList.remove('visible'); }
   });
+
+  // ── Import Modal ────────────────────────────────────────────────────────────
+  let extractedTodos = [];
+
+  function openImportModal() {
+    document.getElementById('import-overlay').classList.add('visible');
+    document.getElementById('import-textarea').focus();
+  }
+
+  function closeImportModal() {
+    document.getElementById('import-overlay').classList.remove('visible');
+    // Reset
+    document.getElementById('import-textarea').value = '';
+    document.getElementById('import-results').classList.remove('visible');
+    document.getElementById('import-footer').style.display = 'none';
+    document.getElementById('import-todo-list').innerHTML = '';
+    document.getElementById('import-warning').style.display = 'none';
+    document.getElementById('import-analyze-btn').disabled = false;
+    extractedTodos = [];
+  }
+
+  function closeImportOnOverlay(e) {
+    if (e.target === document.getElementById('import-overlay')) closeImportModal();
+  }
+
+  async function analyzeText() {
+    const text = document.getElementById('import-textarea').value.trim();
+    if (!text) return;
+
+    const btn = document.getElementById('import-analyze-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Analiz ediliyor...';
+
+    try {
+      const res = await fetch('/todos/extract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text })
+      });
+
+      if (!res.ok) throw new Error('Sunucu hatası');
+      const data = await res.json();
+      extractedTodos = data.todos || [];
+
+      // Sonuç başlığı
+      document.getElementById('import-result-label').textContent =
+        `${data.todoCount} Görev Bulundu`;
+      document.getElementById('import-source-badge').textContent =
+        data.sourceType ? `📋 ${data.sourceType.replace('_', ' ')}` : '';
+
+      // Uyarı
+      const warnEl = document.getElementById('import-warning');
+      if (data.warning) {
+        warnEl.textContent = '⚠️ ' + data.warning;
+        warnEl.style.display = 'block';
+      } else {
+        warnEl.style.display = 'none';
+      }
+
+      // Todo listesi
+      const listEl = document.getElementById('import-todo-list');
+      listEl.innerHTML = '';
+      extractedTodos.forEach((todo, i) => {
+        const priority = (todo.priority || 'MEDIUM').toUpperCase();
+        const div = document.createElement('div');
+        div.className = 'extracted-todo-item';
+        div.innerHTML = `
+          <input type="checkbox" id="todo-check-${i}" checked>
+          <div class="extracted-todo-info">
+            <div class="extracted-todo-title">${todo.title}</div>
+            <div class="extracted-todo-meta">
+              <span class="priority-badge priority-${priority}">${priority}</span>
+              ${todo.dueDate ? `<span>📅 ${todo.dueDate}</span>` : ''}
+              ${todo.description ? `<span>📝 ${todo.description}</span>` : ''}
+            </div>
+            ${todo.reasoning ? `<div class="extracted-todo-reasoning">💡 ${todo.reasoning}</div>` : ''}
+          </div>`;
+        listEl.appendChild(div);
+      });
+
+      document.getElementById('import-results').classList.add('visible');
+      document.getElementById('import-footer').style.display = 'flex';
+
+    } catch (err) {
+      alert('Analiz başarısız: ' + err.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🔍 Analiz Et';
+    }
+  }
+
+  function toggleSelectAll() {
+    const checkboxes = document.querySelectorAll('[id^="todo-check-"]');
+    const allChecked = [...checkboxes].every(c => c.checked);
+    checkboxes.forEach(c => c.checked = !allChecked);
+    document.getElementById('import-select-all').textContent =
+      allChecked ? 'Tümünü Seç' : 'Seçimi Kaldır';
+  }
+
+  async function saveExtracted() {
+    const checkboxes = document.querySelectorAll('[id^="todo-check-"]');
+    const selected = extractedTodos.filter((_, i) => checkboxes[i]?.checked);
+
+    if (selected.length === 0) {
+      alert('En az bir görev seç.');
+      return;
+    }
+
+    const btn = document.getElementById('import-save-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Kaydediliyor...';
+
+    try {
+      const res = await fetch('/todos/extract/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(selected)
+      });
+
+      if (!res.ok) throw new Error('Kaydetme başarısız');
+      const data = await res.json();
+      closeImportModal();
+      // Aktif session'a bilgi mesajı yaz
+      addMessage(`✅ ${data.message}`, 'assistant');
+    } catch (err) {
+      alert('Kaydetme başarısız: ' + err.message);
+      btn.disabled = false;
+      btn.textContent = '✅ Seçilenleri Kaydet';
+    }
+  }
 
   // Sayfa yüklenince session listesini getir
   loadSessions();
