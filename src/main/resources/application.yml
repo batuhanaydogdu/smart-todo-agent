@@ -47,9 +47,11 @@ spring:
       server:
         name: smart-todo-server
         version: 1.0.0
-        # Araçlar MCP endpoint'i: http://localhost:8080/mcp
+        sse-endpoint: /sse
+        message-endpoint: /mcp/message
+        # SSE endpoint: http://localhost:8080/sse
         # Claude Code .claude/settings.json'a ekle:
-        #   { "mcpServers": { "todo": { "url": "http://localhost:8080/mcp" } } }
+        #   { "mcpServers": { "todo": { "type": "sse", "url": "http://localhost:8080/sse" } } }
 
 server:
   port: 8080
